@@ -1,3 +1,6 @@
+using System.Data.SqlClient;
+using Cwiczenia5.DTOs;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -16,29 +19,26 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-var summaries = new[]
+app.MapGet("animals", (IConfiguration configuration) =>
 {
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
+    var animals = new List<GetAllAnimalsResponse>();
+    using (var sqlConnection = new SqlConnection(configuration.GetConnectionString("Default")))
     {
-        var forecast = Enumerable.Range(1, 5).Select(index =>
-                new WeatherForecast
-                (
-                    DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-                    Random.Shared.Next(-20, 55),
-                    summaries[Random.Shared.Next(summaries.Length)]
-                ))
-            .ToArray();
-        return forecast;
-    })
-    .WithName("GetWeatherForecast")
-    .WithOpenApi();
+        var sqlCommand = new SqlCommand("SELECT * FROM Animals", sqlConnection);
+        sqlCommand.Connection.Open();
+        var reader = sqlCommand.ExecuteReader();
+
+        while (reader.Read())
+        {
+            animals.Add(new GetAllAnimalsResponse(
+                reader.GetInt32(0),
+                reader.GetString(1),
+                reader.GetString(2),
+                reader.GetString(3),
+                reader.GetString(4)));
+        }
+    }
+    return Results.Ok(animals);
+});
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
