@@ -1,5 +1,6 @@
-using System.Data.SqlClient;
-using Cwiczenia5.DTOs;
+using Cwiczenia5.Endpoints;
+using Cwiczenia5.Validators;
+using FluentValidation;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,6 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddValidatorsFromAssemblyContaining<CreateAnimalRequestValidator>();
 
 var app = builder.Build();
 
@@ -18,27 +20,5 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-
-app.MapGet("animals", (IConfiguration configuration) =>
-{
-    var animals = new List<GetAllAnimalsResponse>();
-    using (var sqlConnection = new SqlConnection(configuration.GetConnectionString("Default")))
-    {
-        var sqlCommand = new SqlCommand("SELECT * FROM Animals", sqlConnection);
-        sqlCommand.Connection.Open();
-        var reader = sqlCommand.ExecuteReader();
-
-        while (reader.Read())
-        {
-            animals.Add(new GetAllAnimalsResponse(
-                reader.GetInt32(0),
-                reader.GetString(1),
-                reader.GetString(2),
-                reader.GetString(3),
-                reader.GetString(4)));
-        }
-    }
-    return Results.Ok(animals);
-});
-
+app.RegisterAnimalsEndpoints();
 app.Run();
